@@ -1,55 +1,123 @@
-﻿// See https://aka.ms/new-console-template for more information
+﻿
 using System;
+using System.Collections.Generic;
 
-namespace FintechAndDeviceMonitor
+namespace EnergyTechBillingSystem
 {
-    class CreditCardTransaction
+    class Program
     {
-        static void Main(string[] args)
+        
+        class Consumer
         {
-           
-            string transactionID = "TXN123ABC456";     
-            decimal amount = 1000000.75m;                
-            bool isInternational = true;                 
-            double customerRating = 4.75;                
-            DateTime transactionTimestamp = DateTime.Now; 
-            long rewardPoints = 5000000;                 
-
-            Console.WriteLine("=== Credit Card Transaction Details ===");
-            Console.WriteLine($"Transaction ID: {transactionID}");
-            Console.WriteLine($"Amount: ₹{amount}");
-            Console.WriteLine($"Is International: {isInternational}");
-            Console.WriteLine($"Customer Rating: {customerRating}");
-            Console.WriteLine($"Transaction Timestamp: {transactionTimestamp}");
-            Console.WriteLine($"Reward Points: {rewardPoints}");
-            Console.WriteLine();
-
-            Console.WriteLine("=== Starting Device Health Monitoring System ===");
-            TemperatureModule.RunTemperatureModule();
+            public string ConsumerID;
+            public int Units;
+            public int Type; 
+            public double BaseCharge;
+            public double Surcharge;
+            public double Penalty;
+            public double Discount;
+            public double FinalBill;
         }
-    }
 
-    class TemperatureModule
-    {
-        public static void RunTemperatureModule()
+        static int Main()
         {
-            Console.WriteLine("Temperature Module is running...");
+            Console.Write("Enter number of consumers: ");
+            int N = int.Parse(Console.ReadLine());
 
-            VibrationModule.RunVibrationModule();
+            List<Consumer> consumers = new List<Consumer>();
 
-            double currentTemp = 75.5; 
-            Console.WriteLine($"Current Temperature: {currentTemp} °C");
+            double totalRevenue = 0;
+            double highestBill = 0;
+            string highestBillID = "";
+
+            int domesticCount = 0;
+            int commercialCount = 0;
+
+            for (int i = 0; i < N; i++)
+            {
+                Console.WriteLine($"\nEnter details for consumer {i + 1}:");
+
+                Console.Write("Consumer ID: ");
+                string cid = Console.ReadLine();
+
+                Console.Write("Units Consumed: ");
+                int units = int.Parse(Console.ReadLine());
+
+                Console.Write("Connection Type (1=Domestic, 2=Commercial): ");
+                int type = int.Parse(Console.ReadLine());
+
+                Consumer c = new Consumer();
+                c.ConsumerID = cid;
+                c.Units = units;
+                c.Type = type;
+
+              
+                if (type == 1) domesticCount++;
+                else commercialCount++;
+
+                c.BaseCharge = CalculateBaseCharge(units, type);
+
+                c.Surcharge = c.BaseCharge * 0.03;
+
+                c.Penalty = (units > 500) ? 200 : 0;
+
+                double totalBeforeDiscount = c.BaseCharge + c.Surcharge + c.Penalty;
+
+                c.Discount = (totalBeforeDiscount > 2000) ? totalBeforeDiscount * 0.05 : 0;
+
+                c.FinalBill = totalBeforeDiscount - c.Discount;
+
+                consumers.Add(c);
+                totalRevenue += c.FinalBill;
+
+                if (c.FinalBill > highestBill)
+                {
+                    highestBill = c.FinalBill;
+                    highestBillID = c.ConsumerID;
+                }
+            }
+
+            Console.WriteLine("\n--- Individual Bills ---\n");
+
+            foreach (var c in consumers)
+            {
+                Console.WriteLine(
+                    $"{c.ConsumerID}  " +
+                    $"{(c.Type == 1 ? "Domestic" : "Commercial")}  " +
+                    $"Units:{c.Units}  " +
+                    $"Base:₹{c.BaseCharge:F2}  " +
+                    $"Surcharge:₹{c.Surcharge:F2}  " +
+                    $"Penalty:₹{c.Penalty:F2}  " +
+                    $"Discount:₹{c.Discount:F2}  " +
+                    $"Final:₹{c.FinalBill:F2}"
+                );
+            }
+
+            Console.WriteLine("\n--- Summary ---");
+            Console.WriteLine($"Total Consumers: {N}");
+            Console.WriteLine($"Total Revenue: ₹{totalRevenue:F2}");
+            Console.WriteLine($"Highest Bill: {highestBillID} ₹{highestBill:F2}");
+            Console.WriteLine($"Domestic: {domesticCount}   Commercial: {commercialCount}");
         }
-    }
 
-    class VibrationModule
-    {
-        public static void RunVibrationModule()
+        static double CalculateBaseCharge(int units, int type)
         {
-            Console.WriteLine("Vibration Module Helper is running...");
+            double rate = 0;
 
-            double vibrationLevel = 0.03;
-            Console.WriteLine($"Current Vibration Level: {vibrationLevel} mm/s");
+            if (type == 1) 
+            {
+                if (units <= 100) rate = 1.50;
+                else if (units <= 300) rate = 2.50;
+                else rate = 4.00;
+            }
+            else 
+            {
+                if (units <= 200) rate = 5.00;
+                else if (units <= 500) rate = 6.50;
+                else rate = 8.00;
+            }
+
+            return units * rate;
         }
     }
 }
